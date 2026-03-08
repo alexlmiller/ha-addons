@@ -1,0 +1,26 @@
+name: "ScanSnap iX500"
+description: "One-button duplex OCR scanning to Nextcloud via File Drop"
+version: "1.0.0"
+slug: "scansnap_ix500"
+init: false
+arch:
+  - amd64
+
+homeassistant_api: true
+
+devices:
+  - /dev/bus/usb
+
+options:
+  nextcloud_url: ""
+  nextcloud_share_token: ""
+  nextcloud_share_password: ""
+  scan_resolution: 300
+  ocr_language: "eng"
+
+schema:
+  nextcloud_url: str
+  nextcloud_share_token: str
+  nextcloud_share_password: str?
+  scan_resolution: int
+  ocr_language: str
