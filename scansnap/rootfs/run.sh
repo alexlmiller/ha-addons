@@ -48,12 +48,16 @@ scanimage -L 2>&1 | while IFS= read -r line; do
 done || true
 
 # Log all scanner options so we can verify the button option name
+# Device name format from scanimage -L: device `name' is a ...
 bashio::log.info "Scanner options (for button filter debugging):"
-DEVICE=$(scanimage -L 2>/dev/null | grep -o "'[^']*'" | head -1 | tr -d "'")
+DEVICE=$(scanimage -L 2>/dev/null | sed -n "s/^device \`\([^']*\)'.*/\1/p" | head -1)
 if [[ -n "${DEVICE}" ]]; then
-    scanimage -d "${DEVICE}" --all-options 2>&1 | while IFS= read -r line; do
+    bashio::log.info "  Device: ${DEVICE}"
+    timeout 15 scanimage -d "${DEVICE}" --all-options 2>&1 | head -80 | while IFS= read -r line; do
         bashio::log.info "  ${line}"
     done || true
+else
+    bashio::log.info "  Could not determine device name"
 fi
 
 # Start scanbd in foreground; it polls the scanner button and calls scan.sh
