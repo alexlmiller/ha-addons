@@ -8,8 +8,9 @@ arch:
 
 homeassistant_api: true
 
-devices:
-  - /dev/bus/usb
+# full_access gives the container access to all host devices (needed for USB
+# scanner whose /dev/bus/usb/XXX/YYY path can change between reboots)
+full_access: true
 
 options:
   nextcloud_url: ""
