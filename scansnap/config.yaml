@@ -1,6 +1,6 @@
 name: "ScanSnap iX500"
 description: "One-button duplex OCR scanning to Nextcloud via File Drop"
-version: "1.1.9"
+version: "1.1.10"
 slug: "scansnap_ix500"
 init: false
 arch:

@@ -141,7 +141,11 @@ def open_usb() -> usb.core.Device | None:
             kernel_driver_detached = False
     except Exception:
         kernel_driver_detached = False
-    dev.set_configuration()
+    try:
+        dev.get_active_configuration()
+    except usb.core.USBError:
+        dev.set_configuration()
+        log("USB configuration was unset; applied default configuration")
     usb.util.claim_interface(dev, USB_INTERFACE)
     log("USB interface 0 claimed — polling for button press")
     return dev
@@ -162,15 +166,6 @@ def close_usb(dev: usb.core.Device) -> None:
                 break
         if drained:
             log(f"Drained {drained} residual byte(s) from bulk IN endpoint")
-
-        # 2. Send SET_INTERFACE(0, 0) to reset DATA toggle bits on both
-        #    endpoints back to DATA0.  SANE's first bulk transfer will then
-        #    sync correctly without needing a full USB device reset.
-        try:
-            dev.set_interface_altsetting(USB_INTERFACE, 0)
-            log("Endpoint DATA toggles reset via SET_INTERFACE(0, 0)")
-        except Exception as e:
-            log(f"SET_INTERFACE warning (non-fatal): {e}")
 
         usb.util.release_interface(dev, USB_INTERFACE)
         if kernel_driver_detached:

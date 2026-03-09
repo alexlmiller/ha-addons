@@ -83,11 +83,15 @@ scanimage -L 2>&1 | while IFS= read -r line; do
 done || true
 
 SCAN_EXIT=0
-if ! try_scanimage "${SCANBD_DEVICE:-}"; then
+if try_scanimage "${SCANBD_DEVICE:-}"; then
+    :
+else
     SCAN_EXIT=$?
     log "scanimage failed with configured device (${SCAN_EXIT}); retrying with default device selection"
     rm -f "${WORKDIR}"/page_*.tiff
-    if ! try_scanimage ""; then
+    if try_scanimage ""; then
+        :
+    else
         SCAN_EXIT=$?
         fail "scanimage failed to open the scanner (last exit ${SCAN_EXIT})"
     fi
