@@ -19,6 +19,11 @@ DARK_FRACTION_MAX = 0.0035
 STDDEV_MAX = 18.0
 MEAN_MIN = 235.0
 MAX_SIDE = 1000
+VERY_DARK_MAX = 160
+VERY_DARK_FRACTION_MAX = 0.0008
+MID_DARK_MAX = 225
+MID_DARK_FRACTION_MAX = 0.035
+AVG_DARKNESS_MAX = 0.05
 
 
 def normalized_gray(img: Image.Image) -> Image.Image:
@@ -47,15 +52,36 @@ def is_blank(path: str) -> bool:
         total = sum(hist)
         near_white = sum(hist[NEAR_WHITE_MIN:])
         dark = sum(hist[: DARK_PIXEL_MAX + 1])
+        very_dark = sum(hist[: VERY_DARK_MAX + 1])
+        mid_dark = sum(hist[: MID_DARK_MAX + 1])
         near_white_fraction = near_white / total
         dark_fraction = dark / total
+        very_dark_fraction = very_dark / total
+        mid_dark_fraction = mid_dark / total
+        avg_darkness = sum((255 - value) * count for value, count in enumerate(hist)) / (255 * total)
 
-        return (
+        blank = (
             near_white_fraction >= NEAR_WHITE_FRACTION
             and dark_fraction <= DARK_FRACTION_MAX
             and mean >= MEAN_MIN
             and stddev <= STDDEV_MAX
+        ) or (
+            mean >= 228.0
+            and very_dark_fraction <= VERY_DARK_FRACTION_MAX
+            and mid_dark_fraction <= MID_DARK_FRACTION_MAX
+            and avg_darkness <= AVG_DARKNESS_MAX
         )
+
+        print(
+            "STATS:            "
+            f"{path} mean={mean:.1f} stddev={stddev:.1f} "
+            f"near_white={near_white_fraction:.4f} dark={dark_fraction:.4f} "
+            f"very_dark={very_dark_fraction:.4f} mid_dark={mid_dark_fraction:.4f} "
+            f"avg_darkness={avg_darkness:.4f}",
+            file=sys.stderr,
+        )
+
+        return blank
 
 
 def main():
