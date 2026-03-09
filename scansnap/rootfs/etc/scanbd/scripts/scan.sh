@@ -39,6 +39,11 @@ fail() {
 upload_pdf() {
     local encoded_filename
     local http_code
+    local path
+    local public_html
+    local seafile_base_url
+    local seafile_token
+    local upload_url
     local webdav_url
 
     nextcloud_put() {
@@ -101,6 +106,31 @@ upload_pdf() {
                     http_code=$(nextcloud_put "${webdav_url}" legacy)
                 fi
             fi
+            printf '%s' "${http_code}"
+            ;;
+        seafile)
+            seafile_base_url=$(python3 -c 'import sys, urllib.parse; u=urllib.parse.urlparse(sys.argv[1]); print(f"{u.scheme}://{u.netloc}")' "${SEAFILE_UPLOAD_URL}")
+            seafile_token=$(python3 -c 'import re, sys, urllib.parse; path=urllib.parse.urlparse(sys.argv[1]).path; m=re.search(r"/u/d/([^/]+)/?$", path); print(m.group(1) if m else "")' "${SEAFILE_UPLOAD_URL}")
+
+            if [ -z "${seafile_token}" ]; then
+                fail "Could not extract Seafile upload token from seafile_upload_url"
+            fi
+
+            public_html=$(curl -fsSL "${SEAFILE_UPLOAD_URL}") \
+                || fail "Failed to fetch Seafile upload page"
+            path=$(printf '%s' "${public_html}" | python3 -c 'import re, sys; html=sys.stdin.read(); m=re.search(r"path:\s*\"([^\"]+)\"", html); print(m.group(1) if m else "")')
+
+            if [ -z "${path}" ]; then
+                fail "Could not extract Seafile upload path from upload page"
+            fi
+
+            upload_url="${seafile_base_url}/seafhttp/upload-api/${seafile_token}?ret-json=1"
+            log "Uploading to Seafile: ${upload_url} (parent_dir=${path})" >&2
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+                -X POST \
+                -F "file=@${OCR_PDF};type=application/pdf;filename=${FILENAME}" \
+                -F "parent_dir=${path}" \
+                "${upload_url}")
             printf '%s' "${http_code}"
             ;;
         *)
@@ -166,7 +196,7 @@ log "Filename: ${FILENAME}"
 # ── Step 7: Upload to configured destination ─────────────────────────────────
 HTTP_CODE=$(upload_pdf)
 
-if [ "${HTTP_CODE}" != "201" ] && [ "${HTTP_CODE}" != "204" ]; then
+if [ "${HTTP_CODE}" != "200" ] && [ "${HTTP_CODE}" != "201" ] && [ "${HTTP_CODE}" != "204" ]; then
     fail "Upload failed (HTTP ${HTTP_CODE}) — check destination configuration"
 fi
 

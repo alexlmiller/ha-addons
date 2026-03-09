@@ -48,9 +48,6 @@ func activeScanProfile() string {
 	if profile == "" {
 		return string(fss500.ProfileStable300)
 	}
-	if profile == string(fss500.ProfileTest300ResolutionOnly) {
-		return string(fss500.ProfileStable300)
-	}
 	return profile
 }
 

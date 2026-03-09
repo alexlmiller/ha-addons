@@ -1,6 +1,6 @@
 name: "ScanSnap iX500"
-description: "One-button duplex OCR scanning to Nextcloud via File Drop"
-version: "2.0.15"
+description: "One-button duplex OCR scanning to configurable storage backends"
+version: "2.0.17"
 slug: "scansnap_ix500"
 init: false
 arch:
@@ -13,23 +13,29 @@ homeassistant_api: true
 full_access: true
 
 options:
+  # Storage backend settings
   storage_backend: "nextcloud"
-  scan_profile: "stable_300"
   nextcloud_url: ""
   nextcloud_share_token: ""
   nextcloud_share_password: ""
-  scan_resolution: 300
+  seafile_upload_url: ""
+
+  # Scan and OCR settings
+  scan_profile: "stable_300"
   ocr_language: "eng"
   scan_duplex: true
   scan_color: "Color"
 
 schema:
-  storage_backend: list(nextcloud)
-  scan_profile: list(stable_300|stable_600|test_300_resolution_only|test_300_resolution_geometry)
+  # Storage backend settings
+  storage_backend: list(nextcloud|seafile)
   nextcloud_url: str
   nextcloud_share_token: str
   nextcloud_share_password: str?
-  scan_resolution: int
+  seafile_upload_url: str
+
+  # Scan and OCR settings
+  scan_profile: list(stable_300|stable_600)
   ocr_language: str
   scan_duplex: bool
   scan_color: list(Color|Gray|Lineart)
