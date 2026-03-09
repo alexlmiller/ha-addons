@@ -15,8 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # OCR engine
     tesseract-ocr \
     tesseract-ocr-eng \
-    # OCR pipeline (also installs ghostscript, unpaper)
+    # OCR pipeline
     ocrmypdf \
+    unpaper \
     # Lossless TIFF→PDF assembly
     img2pdf \
     # Text extraction from OCR'd PDF
