@@ -1,6 +1,6 @@
 name: "ScanSnap iX500"
 description: "One-button duplex OCR scanning to Nextcloud via File Drop"
-version: "2.0.6"
+version: "2.0.7"
 slug: "scansnap_ix500"
 init: false
 arch:
@@ -14,7 +14,7 @@ full_access: true
 
 options:
   storage_backend: "nextcloud"
-  scan_profile: "stable_600"
+  scan_profile: "test_300_resolution_only"
   nextcloud_url: ""
   nextcloud_share_token: ""
   nextcloud_share_password: ""

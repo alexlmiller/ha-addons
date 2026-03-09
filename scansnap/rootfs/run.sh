@@ -48,7 +48,7 @@ bashio::log.info "Low-level scan profile: ${SCAN_PROFILE}"
 if [ "${SCAN_PROFILE}" = "stable_600" ]; then
     bashio::log.warning "USB-native scanning is using the stable fixed duplex/color/600dpi profile"
 else
-    bashio::log.warning "USB-native scanning is using experimental low-level profile: ${SCAN_PROFILE}"
+    bashio::log.warning "USB-native scanning is using the faster 300dpi test profile by default: ${SCAN_PROFILE}"
 fi
 
 # Wait for USB to settle after container start

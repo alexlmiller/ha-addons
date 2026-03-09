@@ -189,7 +189,7 @@ func ScanToDir(dev *usb.Device, dir string) error {
 			}
 		}
 
-		for side := 1; side >= 0; side-- {
+		for side := 0; side < 2; side++ {
 			pageNumber++
 			pagePath := filepath.Join(dir, fmt.Sprintf("page_%04d.jpg", pageNumber))
 			if err := os.WriteFile(pagePath, states[side].buf.Bytes(), 0o644); err != nil {
