@@ -7,6 +7,7 @@ SCAN_RESOLUTION=$(bashio::config 'scan_resolution')
 OCR_LANGUAGE=$(bashio::config 'ocr_language')
 SCAN_DUPLEX=$(bashio::config 'scan_duplex')
 SCAN_COLOR=$(bashio::config 'scan_color')
+STORAGE_BACKEND=$(bashio::config 'storage_backend')
 
 if bashio::config.has_value 'nextcloud_share_password'; then
     NEXTCLOUD_SHARE_PASSWORD=$(bashio::config 'nextcloud_share_password')
@@ -23,53 +24,29 @@ if bashio::var.is_empty "${NEXTCLOUD_SHARE_TOKEN}"; then
 fi
 
 # Write config file for scan.sh (subprocess cannot use bashio)
-# SCANBD_DEVICE is set to "fujitsu" as a fixed default for the iX500.
-# The button_daemon releases USB before calling scan.sh, so SANE
-# can open the device.
 mkdir -p /etc/scanbd
 cat > /etc/scanbd/addon.conf <<EOF
 NEXTCLOUD_URL="${NEXTCLOUD_URL}"
 NEXTCLOUD_SHARE_TOKEN="${NEXTCLOUD_SHARE_TOKEN}"
 NEXTCLOUD_SHARE_PASSWORD="${NEXTCLOUD_SHARE_PASSWORD}"
+STORAGE_BACKEND="${STORAGE_BACKEND}"
 SCAN_RESOLUTION="${SCAN_RESOLUTION}"
 OCR_LANGUAGE="${OCR_LANGUAGE}"
 SCAN_DUPLEX="${SCAN_DUPLEX}"
 SCAN_COLOR="${SCAN_COLOR}"
 SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN}"
-SCANBD_DEVICE="fujitsu"
 EOF
 chmod 600 /etc/scanbd/addon.conf
 
 bashio::log.info "Nextcloud URL: ${NEXTCLOUD_URL}"
 bashio::log.info "OCR language: ${OCR_LANGUAGE}"
-bashio::log.info "Scan resolution: ${SCAN_RESOLUTION} dpi | color: ${SCAN_COLOR} | duplex: ${SCAN_DUPLEX}"
+bashio::log.info "Storage backend: ${STORAGE_BACKEND}"
+bashio::log.info "Configured scan mode: ${SCAN_RESOLUTION} dpi | color: ${SCAN_COLOR} | duplex: ${SCAN_DUPLEX}"
+bashio::log.warning "USB-native scanning currently runs with fixed duplex color settings while the single-owner path is being brought up"
 
 # Wait for USB to settle after container start
 bashio::log.info "Waiting for USB devices to settle..."
 sleep 3
 
-# Detect the exact SANE device string instead of hardcoding "fujitsu".
-# The backend exposes names like "fujitsu:ScanSnap iX500:338578", and
-# scanimage rejects the generic backend name as an invalid device id.
-SANE_DEVICE=""
-bashio::log.info "Detected SANE devices:"
-while IFS= read -r line; do
-    bashio::log.info "  ${line}"
-    if [[ -z "${SANE_DEVICE}" && "${line}" =~ device\ \`([^\']+)\'\ is\ a\ .*ScanSnap\ iX500 ]]; then
-        SANE_DEVICE="${BASH_REMATCH[1]}"
-    fi
-done < <(scanimage -L 2>&1 || true)
-
-if bashio::var.is_empty "${SANE_DEVICE}"; then
-    bashio::log.warning "Could not detect a ScanSnap iX500 SANE device; falling back to backend name 'fujitsu'"
-    SANE_DEVICE="fujitsu"
-else
-    bashio::log.info "Using SANE device: ${SANE_DEVICE}"
-fi
-
-# Start the USB button daemon (polls for physical button press via GET_HW_STATUS,
-# also serves the HA ingress panel "Scan Now" button on HTTP_PORT)
-bashio::log.info "Starting ScanSnap button daemon..."
-sed -i.bak "s|^SCANBD_DEVICE=.*$|SCANBD_DEVICE=\"${SANE_DEVICE}\"|" /etc/scanbd/addon.conf
-rm -f /etc/scanbd/addon.conf.bak
-exec python3 /usr/local/bin/button_daemon.py
+bashio::log.info "Starting ScanSnap single-owner scanner daemon..."
+exec /usr/local/bin/scansnap_buttond

@@ -13,4 +13,4 @@ Custom Home Assistant add-on repository.
 
 | Add-on | Description |
 |--------|-------------|
-| [ScanSnap iX500](./scansnap/) | One-button duplex OCR scanning to Nextcloud |
+| [ScanSnap iX500](./scansnap/) | One-button OCR scanning to modular storage backends (Nextcloud first) |
