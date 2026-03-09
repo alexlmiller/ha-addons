@@ -95,6 +95,18 @@ def open_usb() -> usb.core.Device | None:
     """Find the iX500 and claim interface 0 for button polling."""
     dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
     if dev is None:
+        # Log all visible USB devices to aid diagnosis
+        all_devs = list(usb.core.find(find_all=True))
+        if all_devs:
+            log(f"USB devices visible ({len(all_devs)} total), looking for "
+                f"{VENDOR_ID:04x}:{PRODUCT_ID:04x}:")
+            for d in all_devs:
+                try:
+                    log(f"  {d.idVendor:04x}:{d.idProduct:04x}")
+                except Exception:
+                    pass
+        else:
+            log("No USB devices visible at all — check container USB access / full_access:true")
         return None
     try:
         if dev.is_kernel_driver_active(USB_INTERFACE):
