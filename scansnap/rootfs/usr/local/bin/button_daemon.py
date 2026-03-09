@@ -275,6 +275,11 @@ def main():
             while True:
                 # Check physical button and HTTP trigger
                 status   = query_hw_status(dev)
+                if status is None:
+                    # USB error (scanner turned off or disconnected).
+                    # Break to the outer loop which will retry open_usb() every 5s.
+                    log("USB query failed — scanner disconnected? Reconnecting in 5s…")
+                    break
                 physical = scan_button_pressed(status)
                 virtual  = http_scan_request.is_set()
 
