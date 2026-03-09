@@ -10,7 +10,7 @@ Prints kept/removed status to stderr; deletes blank files.
 
 import os
 import sys
-from PIL import Image, ImageStat
+from PIL import Image, ImageFilter, ImageStat
 
 NEAR_WHITE_MIN = 245
 DARK_PIXEL_MAX = 200
@@ -30,6 +30,8 @@ BLEED_DARK_FRACTION_MAX = 0.012
 BLEED_VERY_DARK_FRACTION_MAX = 0.008
 BLEED_MID_DARK_FRACTION_MAX = 0.14
 BLEED_AVG_DARKNESS_MAX = 0.08
+BLEED_EDGE_MEAN_MAX = 8.5
+BLEED_EDGE_DARK_FRACTION_MAX = 0.035
 
 
 def normalized_gray(img: Image.Image) -> Image.Image:
@@ -65,6 +67,11 @@ def is_blank(path: str) -> bool:
         very_dark_fraction = very_dark / total
         mid_dark_fraction = mid_dark / total
         avg_darkness = sum((255 - value) * count for value, count in enumerate(hist)) / (255 * total)
+        edges = gray.filter(ImageFilter.FIND_EDGES)
+        edge_hist = edges.histogram()
+        edge_total = sum(edge_hist)
+        edge_mean = ImageStat.Stat(edges).mean[0]
+        edge_dark_fraction = sum(edge_hist[32:]) / edge_total
 
         blank = (
             near_white_fraction >= NEAR_WHITE_FRACTION
@@ -83,6 +90,8 @@ def is_blank(path: str) -> bool:
             and very_dark_fraction <= BLEED_VERY_DARK_FRACTION_MAX
             and mid_dark_fraction <= BLEED_MID_DARK_FRACTION_MAX
             and avg_darkness <= BLEED_AVG_DARKNESS_MAX
+            and edge_mean <= BLEED_EDGE_MEAN_MAX
+            and edge_dark_fraction <= BLEED_EDGE_DARK_FRACTION_MAX
         )
 
         print(
@@ -90,7 +99,8 @@ def is_blank(path: str) -> bool:
             f"{path} mean={mean:.1f} stddev={stddev:.1f} "
             f"near_white={near_white_fraction:.4f} dark={dark_fraction:.4f} "
             f"very_dark={very_dark_fraction:.4f} mid_dark={mid_dark_fraction:.4f} "
-            f"avg_darkness={avg_darkness:.4f}",
+            f"avg_darkness={avg_darkness:.4f} edge_mean={edge_mean:.1f} "
+            f"edge_dark={edge_dark_fraction:.4f}",
             file=sys.stderr,
         )
 

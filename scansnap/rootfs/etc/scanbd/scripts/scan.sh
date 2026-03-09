@@ -19,20 +19,8 @@ log() {
     echo "[scan.sh $(date +%H:%M:%S)] $*"
 }
 
-notify_ha() {
-    local title="$1"
-    local message="$2"
-    curl -s -X POST \
-        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-        -H "Content-Type: application/json" \
-        -d "{\"title\": \"${title}\", \"message\": \"${message}\"}" \
-        "http://supervisor/core/api/services/persistent_notification/create" \
-        || log "WARNING: HA notification failed (pipeline continues)"
-}
-
 fail() {
     log "ERROR: $1"
-    notify_ha "ScanSnap Error" "$1"
     exit 1
 }
 
@@ -202,5 +190,4 @@ fi
 
 # ── Step 8: Success notification ─────────────────────────────────────────────
 log "Upload successful (HTTP ${HTTP_CODE})"
-notify_ha "Scan Complete" "Uploaded: ${FILENAME}"
 log "Done."

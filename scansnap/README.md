@@ -1,6 +1,6 @@
 # ScanSnap iX500
 
-Press the physical scan button to scan a stack of documents from the ADF, run OCR, and upload a searchable PDF to a configured storage backend — with a Home Assistant notification on completion.
+Press the physical scan button to scan a stack of documents from the ADF, run OCR, and upload a searchable PDF to a configured storage backend.
 
 ## Requirements
 
@@ -58,8 +58,6 @@ Current limitation: the single-owner USB scanner path is stable, but the low-lev
 5. **OCR** — `ocrmypdf` produces a searchable PDF/A with auto-rotation and deskew.
 6. **Smart filename** — The OCR text is analysed locally (no external API) to extract a document date, organisation name, and document type, producing a filename like `2026-03-07 - Chase Bank Statement.pdf`.
 7. **Destination dispatch** — The finished PDF is handed to the configured storage backend. `nextcloud` and `seafile` are implemented.
-8. **Notification** — A Home Assistant persistent notification confirms the upload or reports any error.
-
 ## Scanner On/Off Behaviour
 
 The daemon handles the scanner being powered on and off at any time. When the scanner is off it retries every 5 seconds; when it comes back it resumes polling immediately.
@@ -75,7 +73,3 @@ The daemon handles the scanner being powered on and off at any time. When the sc
 - Confirm the share token is from a File Drop share (not a regular share).
 - If the share has a password, make sure `nextcloud_share_password` is set.
 - For Seafile, confirm `seafile_upload_url` is the full public upload-link URL and still opens in a browser.
-
-**No HA notification**
-- Ensure `homeassistant_api` is enabled (it is by default in this add-on).
-- Check that the Supervisor token is being passed correctly — visible in the add-on logs on startup.
