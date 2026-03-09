@@ -148,6 +148,8 @@ log "Running OCR (language: ${OCR_LANGUAGE:-eng})..."
 ocrmypdf \
     --rotate-pages \
     --deskew \
+    --clean-final \
+    --remove-background \
     --output-type pdfa \
     -l "${OCR_LANGUAGE:-eng}" \
     "${RAW_PDF}" "${OCR_PDF}" \

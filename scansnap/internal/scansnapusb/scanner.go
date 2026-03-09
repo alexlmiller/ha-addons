@@ -13,6 +13,30 @@ import (
 	"scansnap_buttond/internal/usb"
 )
 
+func reverseOutputPages(dir string, total int) error {
+	if total <= 1 {
+		return nil
+	}
+
+	for idx := 1; idx <= total; idx++ {
+		oldPath := filepath.Join(dir, fmt.Sprintf("page_%04d.jpg", idx))
+		tmpPath := filepath.Join(dir, fmt.Sprintf("reorder_%04d.jpg", idx))
+		if err := os.Rename(oldPath, tmpPath); err != nil {
+			return err
+		}
+	}
+
+	for idx := 1; idx <= total; idx++ {
+		src := filepath.Join(dir, fmt.Sprintf("reorder_%04d.jpg", idx))
+		dst := filepath.Join(dir, fmt.Sprintf("page_%04d.jpg", total-idx+1))
+		if err := os.Rename(src, dst); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type Config struct {
 	Profile  fss500.ScanProfile
 	Geometry fss500.ScanGeometry
@@ -196,6 +220,10 @@ func ScanToDir(dev *usb.Device, dir string) error {
 				return err
 			}
 		}
+	}
+
+	if err := reverseOutputPages(dir, pageNumber); err != nil {
+		return err
 	}
 
 	return nil
