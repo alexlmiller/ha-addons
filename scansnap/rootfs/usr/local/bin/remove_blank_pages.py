@@ -24,6 +24,12 @@ VERY_DARK_FRACTION_MAX = 0.0008
 MID_DARK_MAX = 225
 MID_DARK_FRACTION_MAX = 0.035
 AVG_DARKNESS_MAX = 0.05
+BLEED_MEAN_MIN = 232.0
+BLEED_STDDEV_MAX = 20.0
+BLEED_DARK_FRACTION_MAX = 0.012
+BLEED_VERY_DARK_FRACTION_MAX = 0.008
+BLEED_MID_DARK_FRACTION_MAX = 0.14
+BLEED_AVG_DARKNESS_MAX = 0.08
 
 
 def normalized_gray(img: Image.Image) -> Image.Image:
@@ -70,6 +76,13 @@ def is_blank(path: str) -> bool:
             and very_dark_fraction <= VERY_DARK_FRACTION_MAX
             and mid_dark_fraction <= MID_DARK_FRACTION_MAX
             and avg_darkness <= AVG_DARKNESS_MAX
+        ) or (
+            mean >= BLEED_MEAN_MIN
+            and stddev <= BLEED_STDDEV_MAX
+            and dark_fraction <= BLEED_DARK_FRACTION_MAX
+            and very_dark_fraction <= BLEED_VERY_DARK_FRACTION_MAX
+            and mid_dark_fraction <= BLEED_MID_DARK_FRACTION_MAX
+            and avg_darkness <= BLEED_AVG_DARKNESS_MAX
         )
 
         print(

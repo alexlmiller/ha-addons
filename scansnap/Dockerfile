@@ -35,6 +35,7 @@ RUN chmod +x \
     /run.sh \
     /etc/scanbd/scripts/scan.sh \
     /usr/local/bin/scansnap_buttond \
+    /usr/local/bin/rotate_pages.py \
     /usr/local/bin/remove_blank_pages.py \
     /usr/local/bin/name_from_ocr.py
 
