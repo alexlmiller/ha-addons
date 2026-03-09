@@ -31,6 +31,7 @@ upload_pdf() {
     local file_path
     local path
     local public_html
+    local seafile_base_url
     local seafile_token
     local upload_url
     local webdav_url
@@ -98,6 +99,7 @@ upload_pdf() {
             printf '%s' "${http_code}"
             ;;
         seafile)
+            seafile_base_url=$(python3 -c 'import sys, urllib.parse; u=urllib.parse.urlparse(sys.argv[1]); print(f"{u.scheme}://{u.netloc}")' "${SEAFILE_UPLOAD_URL}")
             seafile_token=$(python3 -c 'import re, sys, urllib.parse; path=urllib.parse.urlparse(sys.argv[1]).path; m=re.search(r"/u/d/([^/]+)/?$", path); print(m.group(1) if m else "")' "${SEAFILE_UPLOAD_URL}")
 
             if [ -z "${seafile_token}" ]; then
@@ -112,7 +114,7 @@ upload_pdf() {
                 fail "Could not extract Seafile upload path from upload page"
             fi
 
-            upload_url=$(curl -fsSL "https://seafile.net.milf.red/api/v2.1/upload-links/${seafile_token}/upload/" | python3 -c 'import json, sys; data=json.load(sys.stdin); print(data.get("upload_link", ""))') \
+            upload_url=$(curl -fsSL "${seafile_base_url}/api/v2.1/upload-links/${seafile_token}/upload/" | python3 -c 'import json, sys; data=json.load(sys.stdin); print(data.get("upload_link", ""))') \
                 || fail "Failed to fetch Seafile upload URL"
 
             if [ -z "${upload_url}" ]; then
@@ -131,7 +133,7 @@ upload_pdf() {
                 done_code=$(curl -s -o /dev/null -w "%{http_code}" \
                     -X POST \
                     -F "file_path=${file_path}" \
-                    "https://seafile.net.milf.red/api/v2.1/share-links/${seafile_token}/upload/done/")
+                    "${seafile_base_url}/api/v2.1/share-links/${seafile_token}/upload/done/")
                 if [ "${done_code}" != "200" ] && [ "${done_code}" != "201" ] && [ "${done_code}" != "204" ]; then
                     fail "Seafile upload finalize failed (HTTP ${done_code})"
                 fi
