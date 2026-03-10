@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"scansnap_buttond/internal/fss500"
@@ -33,13 +35,18 @@ func main() {
 		}
 
 		log.Printf("USB device opened - waiting for button press")
-		if err := waitLoop(dev, &lastScan); err != nil {
-			log.Printf("Scanner loop ended: %v", err)
+		loopErr := waitLoop(dev, &lastScan)
+		if loopErr != nil {
+			log.Printf("Scanner loop ended: %v", loopErr)
 		}
 		if err := dev.Close(); err != nil {
 			log.Printf("Device close warning: %v", err)
 		}
-		time.Sleep(2 * time.Second)
+		if transientUSBError(loopErr) {
+			time.Sleep(5 * time.Second)
+		} else {
+			time.Sleep(2 * time.Second)
+		}
 	}
 }
 
@@ -81,6 +88,13 @@ func waitLoop(dev *usb.Device, lastScan *time.Time) error {
 			time.Sleep(pollInterval)
 		}
 	}
+}
+
+func transientUSBError(err error) bool {
+	return errors.Is(err, syscall.EPROTO) ||
+		errors.Is(err, syscall.EOVERFLOW) ||
+		errors.Is(err, syscall.ETIMEDOUT) ||
+		errors.Is(err, syscall.EAGAIN)
 }
 
 func performScan(dev *usb.Device) error {
