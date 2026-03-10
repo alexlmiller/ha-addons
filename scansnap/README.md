@@ -20,6 +20,7 @@ This add-on uses Nextcloud's **File Drop** feature — an upload-only share that
 1. In Nextcloud, create or choose a folder (e.g. `Scans`)
 2. Share it → enable **File Drop** mode → optionally set a password
 3. Copy the share token from the link (e.g. `abc123` from `https://cloud.example.com/s/abc123`)
+4. Leave `upload_nextcloud: true` enabled
 
 ### Seafile (one-time)
 
@@ -112,3 +113,4 @@ The daemon handles the scanner being powered on and off at any time. When the sc
 - If the share has a password, make sure `nextcloud_share_password` is set.
 - For Seafile, confirm `seafile_upload_url` is the full public upload-link URL and still opens in a browser.
 - For Paperless-ngx, confirm `paperless_url` is the base site URL and `paperless_token` is a valid API token.
+- If multiple destinations are enabled, one failing destination makes the overall scan fail after processing completes.
