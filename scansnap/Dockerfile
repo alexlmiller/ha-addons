@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-eng \
     # OCR pipeline
     ocrmypdf \
-    jbig2enc \
     unpaper \
     pngquant \
     # Lossless TIFF→PDF assembly
@@ -29,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Python scripts for scan processing
     python3 \
     python3-pillow \
+    && (apt-get install -y --no-install-recommends jbig2enc || true) \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /out/scansnap_buttond /usr/local/bin/scansnap_buttond
