@@ -4,6 +4,8 @@
 NEXTCLOUD_URL=$(bashio::config 'nextcloud_url')
 NEXTCLOUD_SHARE_TOKEN=$(bashio::config 'nextcloud_share_token')
 SEAFILE_UPLOAD_URL=$(bashio::config 'seafile_upload_url')
+PAPERLESS_URL=$(bashio::config 'paperless_url')
+PAPERLESS_TOKEN=$(bashio::config 'paperless_token')
 OCR_LANGUAGE=$(bashio::config 'ocr_language')
 SCAN_DUPLEX=$(bashio::config 'scan_duplex')
 SCAN_COLOR=$(bashio::config 'scan_color')
@@ -34,6 +36,14 @@ case "${STORAGE_BACKEND}" in
             bashio::exit.nok "seafile_upload_url is required when storage_backend=seafile"
         fi
         ;;
+    paperless)
+        if bashio::var.is_empty "${PAPERLESS_URL}"; then
+            bashio::exit.nok "paperless_url is required when storage_backend=paperless"
+        fi
+        if bashio::var.is_empty "${PAPERLESS_TOKEN}"; then
+            bashio::exit.nok "paperless_token is required when storage_backend=paperless"
+        fi
+        ;;
     *)
         bashio::exit.nok "unsupported storage_backend: ${STORAGE_BACKEND}"
         ;;
@@ -46,6 +56,8 @@ NEXTCLOUD_URL="${NEXTCLOUD_URL}"
 NEXTCLOUD_SHARE_TOKEN="${NEXTCLOUD_SHARE_TOKEN}"
 NEXTCLOUD_SHARE_PASSWORD="${NEXTCLOUD_SHARE_PASSWORD}"
 SEAFILE_UPLOAD_URL="${SEAFILE_UPLOAD_URL}"
+PAPERLESS_URL="${PAPERLESS_URL}"
+PAPERLESS_TOKEN="${PAPERLESS_TOKEN}"
 STORAGE_BACKEND="${STORAGE_BACKEND}"
 SCAN_PROFILE="${SCAN_PROFILE}"
 PROCESSING_PROFILE="${PROCESSING_PROFILE}"
@@ -59,6 +71,7 @@ chmod 600 /etc/scanbd/addon.conf
 
 bashio::log.info "Nextcloud URL: ${NEXTCLOUD_URL}"
 bashio::log.info "Seafile upload URL: ${SEAFILE_UPLOAD_URL}"
+bashio::log.info "Paperless URL: ${PAPERLESS_URL}"
 bashio::log.info "OCR language: ${OCR_LANGUAGE}"
 bashio::log.info "Storage backend: ${STORAGE_BACKEND}"
 bashio::log.info "Configured scan mode: profile=${SCAN_PROFILE} | color: ${SCAN_COLOR} | duplex: ${SCAN_DUPLEX}"

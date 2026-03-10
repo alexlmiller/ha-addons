@@ -1,6 +1,6 @@
 name: "ScanSnap iX500"
 description: "One-button duplex OCR scanning to configurable storage backends"
-version: "1.0.9"
+version: "1.0.10"
 slug: "scansnap_ix500"
 init: false
 arch:
@@ -19,6 +19,8 @@ options:
   nextcloud_share_token: ""
   nextcloud_share_password: ""
   seafile_upload_url: ""
+  paperless_url: ""
+  paperless_token: ""
 
   # Scan and OCR settings
   scan_profile: "stable_300"
@@ -31,11 +33,13 @@ options:
 
 schema:
   # Storage backend settings
-  storage_backend: list(nextcloud|seafile)
+  storage_backend: list(nextcloud|seafile|paperless)
   nextcloud_url: str
   nextcloud_share_token: str
   nextcloud_share_password: str?
   seafile_upload_url: str
+  paperless_url: str
+  paperless_token: password
 
   # Scan and OCR settings
   scan_profile: list(stable_300|stable_600)

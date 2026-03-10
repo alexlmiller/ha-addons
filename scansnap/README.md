@@ -8,7 +8,8 @@ Press the physical scan button to scan a stack of documents from the ADF, run OC
 - Home Assistant OS (amd64)
 - A supported storage backend:
   - Nextcloud File Drop, or
-  - Seafile upload link
+  - Seafile upload link, or
+  - Paperless-ngx
 
 ## Storage Setup
 
@@ -26,6 +27,14 @@ This add-on uses Nextcloud's **File Drop** feature — an upload-only share that
 2. Copy the full upload link URL (e.g. `https://seafile.example.com/u/d/abcdef123456/`)
 3. Set `storage_backend: seafile` and paste the link into `seafile_upload_url`
 
+### Paperless-ngx (one-time)
+
+1. Create an API token in Paperless-ngx
+2. Copy your Paperless base URL (e.g. `https://paperless.example.com`)
+3. Set `storage_backend: paperless`
+4. Paste the base URL into `paperless_url`
+5. Paste the token into `paperless_token`
+
 ## Configuration
 
 ### Storage Settings
@@ -37,6 +46,8 @@ This add-on uses Nextcloud's **File Drop** feature — an upload-only share that
 | `nextcloud_share_token` | — | The share token from your File Drop link |
 | `nextcloud_share_password` | _(empty)_ | Password for the share, if set |
 | `seafile_upload_url` | _(empty)_ | Full Seafile upload link URL (e.g. `https://seafile.example.com/u/d/abcdef123456/`) |
+| `paperless_url` | _(empty)_ | Paperless-ngx base URL (e.g. `https://paperless.example.com`) |
+| `paperless_token` | _(empty)_ | Paperless-ngx API token |
 
 ### Scan Settings
 
@@ -62,7 +73,7 @@ Current limitation: the single-owner USB scanner path is stable, but the low-lev
 4. **PDF assembly** — `img2pdf` combines the remaining pages into a lossless PDF.
 5. **OCR** — `ocrmypdf` produces a searchable PDF/A with auto-rotation and deskew.
 6. **Smart filename** — The OCR text is analysed locally (no external API) to extract a document date, organisation name, and document type, producing a filename like `2026-03-07 - Chase Bank Statement.pdf`.
-7. **Destination dispatch** — The finished PDF is handed to the configured storage backend. `nextcloud` and `seafile` are implemented.
+7. **Destination dispatch** — The finished PDF is handed to the configured storage backend. `nextcloud`, `seafile`, and `paperless` are implemented.
 
 ## Replaying Processing Profiles Locally
 
@@ -98,3 +109,4 @@ The daemon handles the scanner being powered on and off at any time. When the sc
 - Confirm the share token is from a File Drop share (not a regular share).
 - If the share has a password, make sure `nextcloud_share_password` is set.
 - For Seafile, confirm `seafile_upload_url` is the full public upload-link URL and still opens in a browser.
+- For Paperless-ngx, confirm `paperless_url` is the base site URL and `paperless_token` is a valid API token.

@@ -65,6 +65,9 @@ upload_pdf() {
     local seafile_token
     local upload_url
     local webdav_url
+    local response_body
+    local document_title
+    local created_date
 
     nextcloud_put() {
         local url="$1"
@@ -169,6 +172,64 @@ upload_pdf() {
                 fi
             fi
 
+            printf '%s' "${http_code}"
+            ;;
+        paperless)
+            document_title="${FILENAME%.pdf}"
+            created_date=""
+            if [[ "${FILENAME}" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2})\ -\  ]]; then
+                created_date="${BASH_REMATCH[1]}"
+            fi
+
+            log "Uploading to Paperless-ngx: ${PAPERLESS_URL}/api/documents/post_document/" >&2
+            response_body="$(mktemp)"
+            if [ -n "${created_date}" ]; then
+                http_code=$(
+                    curl -s -o "${response_body}" -w "%{http_code}" \
+                        -X POST \
+                        -H "Authorization: Token ${PAPERLESS_TOKEN}" \
+                        -F "document=@${OCR_PDF};type=application/pdf;filename=${FILENAME}" \
+                        -F "title=${document_title}" \
+                        -F "created=${created_date}" \
+                        "${PAPERLESS_URL%/}/api/documents/post_document/"
+                )
+            else
+                http_code=$(
+                    curl -s -o "${response_body}" -w "%{http_code}" \
+                        -X POST \
+                        -H "Authorization: Token ${PAPERLESS_TOKEN}" \
+                        -F "document=@${OCR_PDF};type=application/pdf;filename=${FILENAME}" \
+                        -F "title=${document_title}" \
+                        "${PAPERLESS_URL%/}/api/documents/post_document/"
+                )
+            fi
+
+            if [ "${http_code}" = "200" ] || [ "${http_code}" = "201" ] || [ "${http_code}" = "202" ]; then
+                local task_id
+                task_id="$(python3 -c 'import json,sys
+from pathlib import Path
+raw=Path(sys.argv[1]).read_text().strip()
+if not raw:
+    print("")
+    raise SystemExit(0)
+try:
+    data=json.loads(raw)
+except Exception:
+    print(raw.strip("\""))
+    raise SystemExit(0)
+if isinstance(data, str):
+    print(data)
+elif isinstance(data, dict):
+    print(data.get("task_id") or data.get("task") or data.get("id") or "")
+else:
+    print("")' "${response_body}")"
+                if [ -n "${task_id}" ]; then
+                    log "Paperless accepted document (task: ${task_id})" >&2
+                else
+                    log "Paperless accepted document" >&2
+                fi
+            fi
+            rm -f "${response_body}"
             printf '%s' "${http_code}"
             ;;
         local)
