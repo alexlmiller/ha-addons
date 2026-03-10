@@ -172,14 +172,19 @@ if [ "${KEPT_COUNT}" -eq 0 ]; then
 fi
 log "Kept ${KEPT_COUNT} page(s) after blank removal"
 
-# ── Step 4: Assemble lossless PDF ────────────────────────────────────────────
+# ── Step 4: Clean page backgrounds for OCR/readability ───────────────────────
+log "Cleaning page backgrounds..."
+/usr/local/bin/clean_document_pages.py "${PAGE_FILES[@]}" \
+    || fail "document page cleanup failed"
+
+# ── Step 5: Assemble lossless PDF ────────────────────────────────────────────
 RAW_PDF="${WORKDIR}/raw.pdf"
 log "Assembling PDF with img2pdf..."
 IFS=$'\n' PAGE_FILES=($(printf '%s\n' "${PAGE_FILES[@]}" | sort))
 img2pdf --output "${RAW_PDF}" "${PAGE_FILES[@]}" \
     || fail "img2pdf failed"
 
-# ── Step 5: OCR ──────────────────────────────────────────────────────────────
+# ── Step 6: OCR ──────────────────────────────────────────────────────────────
 OCR_PDF="${WORKDIR}/ocr.pdf"
 log "Running OCR (language: ${OCR_LANGUAGE:-eng})..."
 
@@ -193,7 +198,7 @@ ocrmypdf \
     "${RAW_PDF}" "${OCR_PDF}" \
     || fail "ocrmypdf failed"
 
-# ── Step 6: Generate smart filename ──────────────────────────────────────────
+# ── Step 7: Generate smart filename ──────────────────────────────────────────
 log "Extracting text for filename..."
 
 # Extract first 3000 chars from OCR'd PDF for analysis
@@ -201,13 +206,13 @@ TEXT=$(pdftotext "${OCR_PDF}" - 2>/dev/null | head -c 3000 || true)
 FILENAME=$(echo "${TEXT}" | /usr/local/bin/name_from_ocr.py)
 log "Filename: ${FILENAME}"
 
-# ── Step 7: Upload to configured destination ─────────────────────────────────
+# ── Step 8: Upload to configured destination ─────────────────────────────────
 HTTP_CODE=$(upload_pdf)
 
 if [ "${HTTP_CODE}" != "200" ] && [ "${HTTP_CODE}" != "201" ] && [ "${HTTP_CODE}" != "204" ]; then
     fail "Upload failed (HTTP ${HTTP_CODE}) — check destination configuration"
 fi
 
-# ── Step 8: Success notification ─────────────────────────────────────────────
+# ── Step 9: Success ───────────────────────────────────────────────────────────
 log "Upload successful (HTTP ${HTTP_CODE})"
 log "Done."

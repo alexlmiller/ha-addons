@@ -1,6 +1,6 @@
 name: "ScanSnap iX500"
 description: "One-button duplex OCR scanning to configurable storage backends"
-version: "1.0.1"
+version: "1.0.2"
 slug: "scansnap_ix500"
 init: false
 arch:
