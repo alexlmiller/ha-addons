@@ -10,6 +10,7 @@ Prints kept/removed status to stderr; deletes blank files.
 
 import os
 import sys
+from dataclasses import dataclass
 from PIL import Image, ImageFilter, ImageStat
 
 NEAR_WHITE_MIN = 245
@@ -40,6 +41,14 @@ FAINT_BLEED_MID_DARK_FRACTION_MAX = 0.15
 FAINT_BLEED_AVG_DARKNESS_MAX = 0.085
 FAINT_BLEED_EDGE_MEAN_MAX = 12.0
 FAINT_BLEED_EDGE_DARK_FRACTION_MAX = 0.085
+TRAILING_BLANK_MEAN_MIN = 220.0
+TRAILING_BLANK_STDDEV_MAX = 22.0
+TRAILING_BLANK_DARK_FRACTION_MAX = 0.02
+TRAILING_BLANK_EDGE_MEAN_MAX = 12.0
+TRAILING_BLANK_EDGE_DARK_FRACTION_MAX = 0.08
+TRAILING_BLANK_MEAN_DELTA_MIN = 12.0
+TRAILING_BLANK_STDDEV_RATIO_MAX = 0.55
+TRAILING_BLANK_EDGE_RATIO_MAX = 0.42
 
 
 def normalized_gray(img: Image.Image) -> Image.Image:
@@ -55,14 +64,26 @@ def normalized_gray(img: Image.Image) -> Image.Image:
     return gray
 
 
-def is_blank(path: str) -> bool:
+@dataclass
+class PageStats:
+    path: str
+    mean: float
+    stddev: float
+    near_white_fraction: float
+    dark_fraction: float
+    very_dark_fraction: float
+    mid_dark_fraction: float
+    avg_darkness: float
+    edge_mean: float
+    edge_dark_fraction: float
+
+
+def page_stats(path: str) -> PageStats:
     with Image.open(path) as img:
         gray = normalized_gray(img)
         stat = ImageStat.Stat(gray)
         mean = stat.mean[0]
         stddev = stat.stddev[0]
-        if mean > 245 and stddev < 4:
-            return True
 
         hist = gray.histogram()
         total = sum(hist)
@@ -81,47 +102,78 @@ def is_blank(path: str) -> bool:
         edge_mean = ImageStat.Stat(edges).mean[0]
         edge_dark_fraction = sum(edge_hist[32:]) / edge_total
 
-        blank = (
-            near_white_fraction >= NEAR_WHITE_FRACTION
-            and dark_fraction <= DARK_FRACTION_MAX
-            and mean >= MEAN_MIN
-            and stddev <= STDDEV_MAX
-        ) or (
-            mean >= 228.0
-            and very_dark_fraction <= VERY_DARK_FRACTION_MAX
-            and mid_dark_fraction <= MID_DARK_FRACTION_MAX
-            and avg_darkness <= AVG_DARKNESS_MAX
-        ) or (
-            mean >= BLEED_MEAN_MIN
-            and stddev <= BLEED_STDDEV_MAX
-            and dark_fraction <= BLEED_DARK_FRACTION_MAX
-            and very_dark_fraction <= BLEED_VERY_DARK_FRACTION_MAX
-            and mid_dark_fraction <= BLEED_MID_DARK_FRACTION_MAX
-            and avg_darkness <= BLEED_AVG_DARKNESS_MAX
-            and edge_mean <= BLEED_EDGE_MEAN_MAX
-            and edge_dark_fraction <= BLEED_EDGE_DARK_FRACTION_MAX
-        ) or (
-            mean >= FAINT_BLEED_MEAN_MIN
-            and stddev <= FAINT_BLEED_STDDEV_MAX
-            and dark_fraction <= FAINT_BLEED_DARK_FRACTION_MAX
-            and very_dark_fraction <= FAINT_BLEED_VERY_DARK_FRACTION_MAX
-            and mid_dark_fraction <= FAINT_BLEED_MID_DARK_FRACTION_MAX
-            and avg_darkness <= FAINT_BLEED_AVG_DARKNESS_MAX
-            and edge_mean <= FAINT_BLEED_EDGE_MEAN_MAX
-            and edge_dark_fraction <= FAINT_BLEED_EDGE_DARK_FRACTION_MAX
+        return PageStats(
+            path=path,
+            mean=mean,
+            stddev=stddev,
+            near_white_fraction=near_white / total,
+            dark_fraction=dark / total,
+            very_dark_fraction=very_dark / total,
+            mid_dark_fraction=mid_dark / total,
+            avg_darkness=sum((255 - value) * count for value, count in enumerate(hist)) / (255 * total),
+            edge_mean=edge_mean,
+            edge_dark_fraction=edge_dark_fraction,
         )
 
-        print(
-            "STATS:            "
-            f"{path} mean={mean:.1f} stddev={stddev:.1f} "
-            f"near_white={near_white_fraction:.4f} dark={dark_fraction:.4f} "
-            f"very_dark={very_dark_fraction:.4f} mid_dark={mid_dark_fraction:.4f} "
-            f"avg_darkness={avg_darkness:.4f} edge_mean={edge_mean:.1f} "
-            f"edge_dark={edge_dark_fraction:.4f}",
-            file=sys.stderr,
-        )
 
-        return blank
+def print_stats(stats: PageStats) -> None:
+    print(
+        "STATS:            "
+        f"{stats.path} mean={stats.mean:.1f} stddev={stats.stddev:.1f} "
+        f"near_white={stats.near_white_fraction:.4f} dark={stats.dark_fraction:.4f} "
+        f"very_dark={stats.very_dark_fraction:.4f} mid_dark={stats.mid_dark_fraction:.4f} "
+        f"avg_darkness={stats.avg_darkness:.4f} edge_mean={stats.edge_mean:.1f} "
+        f"edge_dark={stats.edge_dark_fraction:.4f}",
+        file=sys.stderr,
+    )
+
+
+def is_blank(stats: PageStats) -> bool:
+    if stats.mean > 245 and stats.stddev < 4:
+        return True
+
+    return (
+        stats.near_white_fraction >= NEAR_WHITE_FRACTION
+        and stats.dark_fraction <= DARK_FRACTION_MAX
+        and stats.mean >= MEAN_MIN
+        and stats.stddev <= STDDEV_MAX
+    ) or (
+        stats.mean >= 228.0
+        and stats.very_dark_fraction <= VERY_DARK_FRACTION_MAX
+        and stats.mid_dark_fraction <= MID_DARK_FRACTION_MAX
+        and stats.avg_darkness <= AVG_DARKNESS_MAX
+    ) or (
+        stats.mean >= BLEED_MEAN_MIN
+        and stats.stddev <= BLEED_STDDEV_MAX
+        and stats.dark_fraction <= BLEED_DARK_FRACTION_MAX
+        and stats.very_dark_fraction <= BLEED_VERY_DARK_FRACTION_MAX
+        and stats.mid_dark_fraction <= BLEED_MID_DARK_FRACTION_MAX
+        and stats.avg_darkness <= BLEED_AVG_DARKNESS_MAX
+        and stats.edge_mean <= BLEED_EDGE_MEAN_MAX
+        and stats.edge_dark_fraction <= BLEED_EDGE_DARK_FRACTION_MAX
+    ) or (
+        stats.mean >= FAINT_BLEED_MEAN_MIN
+        and stats.stddev <= FAINT_BLEED_STDDEV_MAX
+        and stats.dark_fraction <= FAINT_BLEED_DARK_FRACTION_MAX
+        and stats.very_dark_fraction <= FAINT_BLEED_VERY_DARK_FRACTION_MAX
+        and stats.mid_dark_fraction <= FAINT_BLEED_MID_DARK_FRACTION_MAX
+        and stats.avg_darkness <= FAINT_BLEED_AVG_DARKNESS_MAX
+        and stats.edge_mean <= FAINT_BLEED_EDGE_MEAN_MAX
+        and stats.edge_dark_fraction <= FAINT_BLEED_EDGE_DARK_FRACTION_MAX
+    )
+
+
+def is_trailing_blank_candidate(stats: PageStats, reference: PageStats) -> bool:
+    return (
+        stats.mean >= TRAILING_BLANK_MEAN_MIN
+        and stats.stddev <= TRAILING_BLANK_STDDEV_MAX
+        and stats.dark_fraction <= TRAILING_BLANK_DARK_FRACTION_MAX
+        and stats.edge_mean <= TRAILING_BLANK_EDGE_MEAN_MAX
+        and stats.edge_dark_fraction <= TRAILING_BLANK_EDGE_DARK_FRACTION_MAX
+        and (stats.mean - reference.mean) >= TRAILING_BLANK_MEAN_DELTA_MIN
+        and stats.stddev <= reference.stddev * TRAILING_BLANK_STDDEV_RATIO_MAX
+        and stats.edge_mean <= reference.edge_mean * TRAILING_BLANK_EDGE_RATIO_MAX
+    )
 
 
 def main():
@@ -129,16 +181,39 @@ def main():
         print(f"Usage: {sys.argv[0]} <tiff> [tiff ...]", file=sys.stderr)
         sys.exit(1)
 
+    stats_by_path = []
     for path in sys.argv[1:]:
         try:
-            if is_blank(path):
-                os.remove(path)
-                print(f"BLANK  (removed): {path}", file=sys.stderr)
-            else:
-                print(f"KEEP:             {path}", file=sys.stderr)
+            stats = page_stats(path)
+            stats_by_path.append(stats)
+            print_stats(stats)
         except Exception as e:
             print(f"ERROR processing {path}: {e}", file=sys.stderr)
             # Don't remove on error — keep the page
+
+    blank_paths = {stats.path for stats in stats_by_path if is_blank(stats)}
+
+    kept_candidates = [stats for stats in stats_by_path if stats.path not in blank_paths]
+    if len(kept_candidates) >= 2:
+        trailing = kept_candidates[-1]
+        reference = kept_candidates[-2]
+        if is_trailing_blank_candidate(trailing, reference):
+            print(
+                f"TRAILING_BLANK:   {trailing.path} "
+                f"(lighter and lower-detail than {reference.path})",
+                file=sys.stderr,
+            )
+            blank_paths.add(trailing.path)
+
+    for stats in stats_by_path:
+        if stats.path in blank_paths:
+            try:
+                os.remove(stats.path)
+                print(f"BLANK  (removed): {stats.path}", file=sys.stderr)
+            except Exception as e:
+                print(f"ERROR removing {stats.path}: {e}", file=sys.stderr)
+        else:
+            print(f"KEEP:             {stats.path}", file=sys.stderr)
 
 
 if __name__ == "__main__":
