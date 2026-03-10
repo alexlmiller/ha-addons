@@ -5,7 +5,8 @@ set -euo pipefail
 echo "[scan.sh] Processing scanned pages from: ${SCANNED_DIR:-unknown}" >&2
 
 # Load configuration written by run.sh (bashio context not available here)
-source /etc/scanbd/addon.conf || { echo "[scan.sh] ERROR: failed to source /etc/scanbd/addon.conf" >&2; exit 1; }
+ADDON_CONF_PATH="${ADDON_CONF_PATH:-/etc/scanbd/addon.conf}"
+source "${ADDON_CONF_PATH}" || { echo "[scan.sh] ERROR: failed to source ${ADDON_CONF_PATH}" >&2; exit 1; }
 
 WORKDIR="${SCANNED_DIR:-}"
 if [ -z "${WORKDIR}" ] || [ ! -d "${WORKDIR}" ]; then
@@ -32,6 +33,24 @@ ocr_args() {
 fail() {
     log "ERROR: $1"
     exit 1
+}
+
+archive_raw_scan() {
+    local archive_dir
+    local archive_name
+    local archive_path
+
+    if [ "${ARCHIVE_RAW_SCANS:-false}" != "true" ]; then
+        return 0
+    fi
+
+    archive_dir="${RAW_SCAN_ARCHIVE_DIR:-/share/scansnap-raw}"
+    archive_name="$(date +%Y%m%d-%H%M%S)-$(basename "${WORKDIR}")"
+    archive_path="${archive_dir}/${archive_name}"
+
+    mkdir -p "${archive_dir}" || fail "Could not create raw scan archive dir: ${archive_dir}"
+    cp -R "${WORKDIR}" "${archive_path}" || fail "Could not archive raw scan to ${archive_path}"
+    log "Archived raw scan pages to: ${archive_path}"
 }
 
 upload_pdf() {
@@ -151,6 +170,13 @@ upload_pdf() {
 
             printf '%s' "${http_code}"
             ;;
+        local)
+            mkdir -p "${LOCAL_OUTPUT_DIR:?LOCAL_OUTPUT_DIR is required for local backend}" \
+                || fail "Could not create local output dir"
+            cp "${OCR_PDF}" "${LOCAL_OUTPUT_DIR}/${FILENAME}" \
+                || fail "Could not write local output PDF"
+            printf '%s' "201"
+            ;;
         *)
             fail "Unsupported storage backend: ${STORAGE_BACKEND}"
             ;;
@@ -164,6 +190,7 @@ if [ "${PAGE_COUNT}" -eq 0 ]; then
     fail "No pages were produced by the scanner"
 fi
 log "Found ${PAGE_COUNT} raw page(s)"
+archive_raw_scan
 
 # ── Step 2: Normalize page orientation ───────────────────────────────────────
 log "Rotating pages to upright orientation..."

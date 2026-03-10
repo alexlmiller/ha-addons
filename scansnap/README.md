@@ -44,6 +44,8 @@ This add-on uses Nextcloud's **File Drop** feature — an upload-only share that
 |--------|---------|-------------|
 | `scan_profile` | `stable_300` | Low-level USB scan profile. `stable_300` is the normal default and `stable_600` is a fallback. |
 | `processing_profile` | `baseline` | Post-scan image cleanup profile for structured comparison. `baseline` keeps the original image path, while `gray_light`, `gray_soft`, and `gray_bg_flatten` apply progressively stronger cleanup. |
+| `archive_raw_scans` | `false` | If enabled, saves each raw `page_XXXX.jpg` scan set before any rotation, blank-page removal, or OCR. |
+| `raw_scan_archive_dir` | `/share/scansnap-raw` | Where raw scan directories are archived when `archive_raw_scans` is enabled. |
 | `ocr_language` | `eng` | Tesseract language code(s) — e.g. `eng`, `fra`, `eng+fra` |
 | `scan_duplex` | `true` | Scan both sides of each page (ADF Duplex). Blank reverses are removed automatically. |
 | `scan_color` | `Color` | Color mode: `Color`, `Gray`, or `Lineart` |
@@ -61,6 +63,23 @@ Current limitation: the single-owner USB scanner path is stable, but the low-lev
 5. **OCR** — `ocrmypdf` produces a searchable PDF/A with auto-rotation and deskew.
 6. **Smart filename** — The OCR text is analysed locally (no external API) to extract a document date, organisation name, and document type, producing a filename like `2026-03-07 - Chase Bank Statement.pdf`.
 7. **Destination dispatch** — The finished PDF is handed to the configured storage backend. `nextcloud` and `seafile` are implemented.
+
+## Replaying Processing Profiles Locally
+
+To avoid rescanning the same document while tuning post-processing:
+
+1. Enable `archive_raw_scans`
+2. Scan the document once
+3. Use the archived raw scan directory with the local replay helper:
+
+```bash
+./scripts/replay_raw_scan.sh \
+  /path/to/raw-scan-dir \
+  /tmp/scansnap-replay \
+  baseline gray_light gray_soft gray_bg_flatten
+```
+
+This re-runs the processing pipeline against a copy of the raw `page_XXXX.jpg` files for each requested `processing_profile` and writes the resulting PDFs to per-profile directories under the chosen output directory. The replay path uses a local-only backend, so it does not upload anything.
 
 ## Scanner On/Off Behaviour
 

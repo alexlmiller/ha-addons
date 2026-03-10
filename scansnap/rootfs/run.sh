@@ -10,6 +10,8 @@ SCAN_COLOR=$(bashio::config 'scan_color')
 STORAGE_BACKEND=$(bashio::config 'storage_backend')
 SCAN_PROFILE=$(bashio::config 'scan_profile')
 PROCESSING_PROFILE=$(bashio::config 'processing_profile')
+ARCHIVE_RAW_SCANS=$(bashio::config 'archive_raw_scans')
+RAW_SCAN_ARCHIVE_DIR=$(bashio::config 'raw_scan_archive_dir')
 
 if bashio::config.has_value 'nextcloud_share_password'; then
     NEXTCLOUD_SHARE_PASSWORD=$(bashio::config 'nextcloud_share_password')
@@ -47,6 +49,8 @@ SEAFILE_UPLOAD_URL="${SEAFILE_UPLOAD_URL}"
 STORAGE_BACKEND="${STORAGE_BACKEND}"
 SCAN_PROFILE="${SCAN_PROFILE}"
 PROCESSING_PROFILE="${PROCESSING_PROFILE}"
+ARCHIVE_RAW_SCANS="${ARCHIVE_RAW_SCANS}"
+RAW_SCAN_ARCHIVE_DIR="${RAW_SCAN_ARCHIVE_DIR}"
 OCR_LANGUAGE="${OCR_LANGUAGE}"
 SCAN_DUPLEX="${SCAN_DUPLEX}"
 SCAN_COLOR="${SCAN_COLOR}"
@@ -59,6 +63,7 @@ bashio::log.info "OCR language: ${OCR_LANGUAGE}"
 bashio::log.info "Storage backend: ${STORAGE_BACKEND}"
 bashio::log.info "Configured scan mode: profile=${SCAN_PROFILE} | color: ${SCAN_COLOR} | duplex: ${SCAN_DUPLEX}"
 bashio::log.info "Document processing profile: ${PROCESSING_PROFILE}"
+bashio::log.info "Archive raw scans: ${ARCHIVE_RAW_SCANS} (${RAW_SCAN_ARCHIVE_DIR})"
 bashio::log.info "Low-level scan profile: ${SCAN_PROFILE}"
 case "${SCAN_PROFILE}" in
     stable_300)
