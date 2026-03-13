@@ -384,8 +384,8 @@ log "Kept ${KEPT_COUNT} page(s) after blank removal"
 
 # ── Step 4: Apply processing profile ─────────────────────────────────────────
 PROCESSING_PROFILE="${PROCESSING_PROFILE:-baseline}"
-load_ha_processing_profile
 load_active_processing_profile
+load_ha_processing_profile
 log "Processing profile: ${PROCESSING_PROFILE}"
 case "${PROCESSING_PROFILE}" in
     baseline)
