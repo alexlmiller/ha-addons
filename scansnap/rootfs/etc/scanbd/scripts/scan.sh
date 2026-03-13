@@ -21,6 +21,22 @@ log() {
     echo "[scan.sh $(date +%H:%M:%S)] $*"
 }
 
+load_active_processing_profile() {
+    local profile_file
+    local active_profile
+
+    profile_file="${ACTIVE_PROFILE_FILE:-/data/active_processing_profile}"
+    if [ -f "${profile_file}" ]; then
+        active_profile="$(tr -d '\r\n' < "${profile_file}")"
+        case "${active_profile}" in
+            document_clean|document_texture|baseline)
+                PROCESSING_PROFILE="${active_profile}"
+                log "Active processing profile override: ${PROCESSING_PROFILE}"
+                ;;
+        esac
+    fi
+}
+
 ocr_args() {
     printf '%s\n' \
         --rotate-pages \
@@ -323,6 +339,7 @@ log "Kept ${KEPT_COUNT} page(s) after blank removal"
 
 # ── Step 4: Apply processing profile ─────────────────────────────────────────
 PROCESSING_PROFILE="${PROCESSING_PROFILE:-baseline}"
+load_active_processing_profile
 log "Processing profile: ${PROCESSING_PROFILE}"
 case "${PROCESSING_PROFILE}" in
     baseline)

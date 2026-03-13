@@ -36,6 +36,7 @@ import time
 import threading
 import subprocess
 import traceback
+import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import usb.core
 import usb.util
@@ -47,6 +48,7 @@ EP_OUT        = 0x02   # bulk OUT: host → device
 EP_IN         = 0x81   # bulk IN:  device → host
 SCAN_SCRIPT   = "/etc/scanbd/scripts/scan.sh"
 ADDON_CONF    = "/etc/scanbd/addon.conf"
+ACTIVE_PROFILE_FILE = "/data/active_processing_profile"
 POLL_INTERVAL = 0.5    # seconds between USB polls
 SCAN_DEBOUNCE = 5.0    # minimum seconds between triggered scans
 HTTP_PORT     = int(os.environ.get("INGRESS_PORT", "8099"))
@@ -59,6 +61,28 @@ kernel_driver_detached = False
 
 def log(msg):
     print(f"[button_daemon] {msg}", file=sys.stderr, flush=True)
+
+
+def active_profile() -> str:
+    try:
+        with open(ACTIVE_PROFILE_FILE, "r", encoding="utf-8") as f:
+            value = f.read().strip()
+    except FileNotFoundError:
+        return "document_clean"
+
+    if value in {"document_clean", "document_texture"}:
+        return value
+    return "document_clean"
+
+
+def set_active_profile(value: str) -> bool:
+    if value not in {"document_clean", "document_texture"}:
+        return False
+    os.makedirs(os.path.dirname(ACTIVE_PROFILE_FILE), exist_ok=True)
+    with open(ACTIVE_PROFILE_FILE, "w", encoding="utf-8") as f:
+        f.write(value + "\n")
+    log(f"Active processing profile set to: {value}")
+    return True
 
 
 # ── USB ───────────────────────────────────────────────────────────────────────
@@ -243,7 +267,7 @@ def run_scan(dev: usb.core.Device, source: str) -> usb.core.Device | None:
 
 # ── HTTP server (HA ingress panel) ────────────────────────────────────────────
 
-SCAN_PAGE = b"""<!DOCTYPE html>
+SCAN_PAGE_TEMPLATE = """<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -256,19 +280,49 @@ SCAN_PAGE = b"""<!DOCTYPE html>
          justify-content:center;min-height:100vh;margin:0;
          background:#1c1c1c;color:#f0f0f0}
     h2{font-size:1.4rem;font-weight:500;margin-bottom:2rem;letter-spacing:.03em}
-    button{font-size:1.1rem;padding:.9rem 2.4rem;border:none;border-radius:10px;
+    button{font-size:1.05rem;padding:.9rem 1.4rem;border:none;border-radius:10px;
            background:#0288d1;color:#fff;cursor:pointer;transition:background .15s}
     button:hover{background:#0277bd}
     button:active{background:#01579b}
     button:disabled{background:#555;cursor:default}
+    .profiles{display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;justify-content:center}
+    .profiles button{background:#3c3c3c}
+    .profiles button.active{background:#2e7d32}
     #status{margin-top:1.5rem;font-size:.85rem;color:#aaa;min-height:1.2em}
+    .current{margin-bottom:1rem;color:#bbb;font-size:.95rem}
   </style>
 </head>
 <body>
   <h2>ScanSnap iX500</h2>
+  <div class="current">Active profile: <strong id="current-profile">{current_profile_label}</strong></div>
+  <div class="profiles">
+    <button id="clean-btn" class="{document_clean_class}" onclick="setProfile('document_clean')">Document Clean</button>
+    <button id="texture-btn" class="{document_texture_class}" onclick="setProfile('document_texture')">Document Texture</button>
+  </div>
   <button id="btn" onclick="scan()">Scan Now</button>
   <div id="status"></div>
   <script>
+    function setProfile(profile){
+      const st=document.getElementById('status');
+      st.innerText='Updating profile...';
+      fetch('profile', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'value='+encodeURIComponent(profile)
+      })
+        .then(r=>r.text())
+        .then(t=>{
+          st.innerText=t;
+          const clean=document.getElementById('clean-btn');
+          const texture=document.getElementById('texture-btn');
+          clean.classList.toggle('active', profile==='document_clean');
+          texture.classList.toggle('active', profile==='document_texture');
+          document.getElementById('current-profile').innerText =
+            profile==='document_clean' ? 'Document Clean' : 'Document Texture';
+          setTimeout(()=>{st.innerText=''},2500);
+        })
+        .catch(()=>{st.innerText='Error updating profile.'});
+    }
     function scan(){
       const btn=document.getElementById('btn');
       const st=document.getElementById('status');
@@ -284,14 +338,41 @@ SCAN_PAGE = b"""<!DOCTYPE html>
 </html>"""
 
 
+def render_scan_page() -> bytes:
+    profile = active_profile()
+    label = "Document Clean" if profile == "document_clean" else "Document Texture"
+    return SCAN_PAGE_TEMPLATE.format(
+        current_profile_label=label,
+        document_clean_class="active" if profile == "document_clean" else "",
+        document_texture_class="active" if profile == "document_texture" else "",
+    ).encode("utf-8")
+
+
 class ScanHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
-        self.wfile.write(SCAN_PAGE)
+        self.wfile.write(render_scan_page())
 
     def do_POST(self):
+        if self.path.rstrip("/") == "/profile":
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length).decode("utf-8")
+            params = urllib.parse.parse_qs(body)
+            value = params.get("value", [""])[0]
+            if set_active_profile(value):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(f"Profile set to {value}".encode("utf-8"))
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"Invalid profile")
+            return
+
         http_scan_request.set()
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")

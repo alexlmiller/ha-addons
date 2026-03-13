@@ -68,6 +68,17 @@ Current limitation: the single-owner USB scanner path is stable, but the low-lev
 `scan_profile` is the scanner-mode control that matters today; `scan_duplex` and `scan_color` remain reserved until the USB-native path is mapped more fully.
 `processing_profile` selects between the two settled document-rendering modes; deeper local experimentation is documented in [SCAN_FORMATS.md](/Users/alex/code/ha-addon-scansnap/scansnap/SCAN_FORMATS.md).
 
+## Switching Processing Profiles
+
+You do not need to restart the add-on to switch between `document_clean` and `document_texture`.
+
+- Open the add-on ingress page
+- Use the profile buttons at the top of the page
+- The selected profile is stored in `/data/active_processing_profile`
+- `scan.sh` reads that active profile at scan time
+
+The add-on option in Settings acts as the default profile. The ingress page lets you override it quickly for day-to-day use from a phone or tablet without opening add-on configuration.
+
 ## How It Works
 
 1. **Button detection** — A dedicated Go daemon owns the iX500 over raw USB and polls its hardware status directly. This avoids the fragile USB handoff between button polling and SANE.
