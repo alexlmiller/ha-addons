@@ -14,3 +14,4 @@ Custom Home Assistant add-on repository.
 | Add-on | Description |
 |--------|-------------|
 | [ScanSnap iX500](./scansnap/) | One-button OCR scanning to Nextcloud or Seafile |
+| [Rethink](./rethink/) | Local-only LG ThinQ server with Home Assistant MQTT discovery |
