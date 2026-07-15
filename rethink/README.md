@@ -28,7 +28,7 @@ The add-on exposes these appliance-facing ports:
 | Port | Purpose |
 |---|---|
 | 443/TCP | ThinQ2 HTTPS |
-| 8890/TCP | ThinQ2 secure MQTT |
+| 8883/TCP | ThinQ2 secure MQTT (standard LG port) |
 | 46030/TCP | ThinQ1 HTTPS, legacy devices only |
 | 47878/TCP | ThinQ1 secure MQTT, legacy devices only |
 

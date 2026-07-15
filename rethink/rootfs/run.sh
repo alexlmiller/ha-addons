@@ -43,7 +43,7 @@ fs.writeFileSync(target, JSON.stringify({
   ca_key_file: "ca.key",
   ca_cert_file: "ca.cert",
   https_port: 443,
-  mqtts_port: 8890,
+  mqtts_port: 8883,
   mqtt_port: 1884,
   thinq1_https_port: 46030,
   thinq1_port: 47878,
