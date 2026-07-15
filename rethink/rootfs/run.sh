@@ -43,7 +43,7 @@ fs.writeFileSync(target, JSON.stringify({
   ca_key_file: "ca.key",
   ca_cert_file: "ca.cert",
   https_port: 443,
-  mqtts_port: 8884,
+  mqtts_port: 8890,
   mqtt_port: 1884,
   thinq1_https_port: 46030,
   thinq1_port: 47878,
@@ -54,6 +54,6 @@ fs.writeFileSync(target, JSON.stringify({
 bashio::log.info "Starting local-only Rethink server for ${HOSTNAME}"
 bashio::log.info "Home Assistant MQTT discovery prefix: ${DISCOVERY_PREFIX}"
 bashio::log.info "Rethink MQTT prefix: ${RETHINK_PREFIX}"
-bashio::log.warning "Configure DNS and port redirection before provisioning an appliance; this add-on never enables Rethink bridge mode."
+bashio::log.warning "Configure local DNS before provisioning an appliance; this add-on never enables Rethink bridge mode."
 
 exec node /app/dist/rethink-cloud.js /data/config.json
