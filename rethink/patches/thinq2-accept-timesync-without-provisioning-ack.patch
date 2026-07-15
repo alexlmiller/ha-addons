@@ -1,0 +1,14 @@
+diff --git a/cloud/thinq2/device.ts b/cloud/thinq2/device.ts
+--- a/cloud/thinq2/device.ts
++++ b/cloud/thinq2/device.ts
+@@ -91,6 +91,10 @@ export class DeviceAcceptor extends TypedEmitter<DeviceAcceptorEvents> {
+                 client.deviceObj.emit('data', buf)
+             }
+ 
++            if (payload.cmd === 'req_timesync' && !client.deviceObj && client.deployMsg && payload.did === client.deployMsg.did) {
++                this.completeProvisioning(payload.did, payload, client)
++            }
++
+             if (payload.cmd === 'req_timesync' && client.deviceObj && payload.did === client.deviceObj.id) {
+                 this.timeSyncRequest(client)
+             }
