@@ -28,7 +28,7 @@ The add-on exposes these appliance-facing ports:
 | Port | Purpose |
 |---|---|
 | 443/TCP | ThinQ2 HTTPS |
-| 8884/TCP | ThinQ2 secure MQTT |
+| 8890/TCP | ThinQ2 secure MQTT |
 | 46030/TCP | ThinQ1 HTTPS, legacy devices only |
 | 47878/TCP | ThinQ1 secure MQTT, legacy devices only |
 
@@ -38,7 +38,7 @@ Keep these reachable only from the AC/IoT network. Do not publish them through a
 
 1. Install and start the Mosquitto broker app, then make sure Home Assistant's MQTT integration has discovery enabled.
 2. Install and start Rethink. Confirm its log says `HA mqtt connection established`.
-3. Configure the scoped DNS and port-443 redirect above.
+3. Configure the scoped DNS above.
 4. Put one AC into LG Wi-Fi setup mode, connect a laptop to the AC's temporary Wi-Fi network, then run the upstream `rethink-setup` tool from that laptop.
 5. Confirm the appliance appears as a Home Assistant MQTT-discovered device and validate controls before repeating for the second AC.
 6. Block WAN egress for the AC at the network gateway and verify that local control survives a restart.
