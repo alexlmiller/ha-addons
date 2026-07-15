@@ -1,0 +1,46 @@
+diff --git a/cloud/devices/POT_056905_WW.ts b/cloud/devices/POT_056905_WW.ts
+--- a/cloud/devices/POT_056905_WW.ts
++++ b/cloud/devices/POT_056905_WW.ts
+@@ -180,6 +180,12 @@ export default class Device extends TLVDevice {
+         super.drop()
+     }
+ 
++    start() {
++        // This firmware does not publish state changes made at the physical panel.
++        // Keep Home Assistant in sync with a low-frequency local values query.
++        this.setQueryInterval(30 * 1000)
++    }
++
+     processData(buf: Buffer) {
+         if (
+             buf[2] === 0x04 &&
+diff --git a/tests/cloud/devices/POT_056905_WW.test.ts b/tests/cloud/devices/POT_056905_WW.test.ts
+--- a/tests/cloud/devices/POT_056905_WW.test.ts
++++ b/tests/cloud/devices/POT_056905_WW.test.ts
+@@ -161,6 +161,26 @@ describe(MODEL_ID, () => {
+         dev.drop()
+     })
+ 
++    test('start refreshes values every 30 seconds for physical-panel changes', (t) => {
++        enableMockTimers(t)
++        const { thinq, dev } = makeDevice()
++        if (dev.query_caps_timeout) {
++            clearInterval(dev.query_caps_timeout)
++            dev.query_caps_timeout = undefined
++        }
++        thinq.resetRecorder()
++
++        dev.start()
++        tickMockTimers(t, 29_999)
++        assert.equal(thinq.outbox.length, 0)
++
++        tickMockTimers(t, 1)
++        assert.equal(thinq.outbox.length, 1)
++        assert.equal(hex(thinq.outbox[0]), QUERY_REQUEST_HEX)
++
++        dev.drop()
++    })
++
+     test('0xA7 caps response triggers values query', () => {
+         const { thinq, dev } = makeDevice()
+         thinq.resetRecorder()
