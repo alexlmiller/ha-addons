@@ -21,13 +21,13 @@ It is experimental. Do not install it until you have a recovery plan for each ap
 
 Choose a stable local DNS name, such as `rethink.lan`, and set it as `hostname` here. It must resolve to the Home Assistant IP address for the AC.
 
-During initial provisioning, Rethink requires `common.lgthinq.com` to resolve to Home Assistant and TCP port 443 to be redirected to the add-on's TCP port 4433. Scope this temporary DNS and port rule to the pilot AC or its IoT VLAN. Remove it when provisioning succeeds unless Rethink's upstream instructions say it is still needed for that appliance generation.
+During initial provisioning, Rethink requires `common.lgthinq.com` to resolve to Home Assistant. This add-on listens on TCP port 443 directly, so no router-level destination-port translation is required. Scope the temporary DNS record to the pilot window and remove it when provisioning succeeds unless Rethink's upstream instructions say it is still needed for that appliance generation.
 
 The add-on exposes these appliance-facing ports:
 
 | Port | Purpose |
 |---|---|
-| 4433/TCP | ThinQ2 HTTPS |
+| 443/TCP | ThinQ2 HTTPS |
 | 8884/TCP | ThinQ2 secure MQTT |
 | 46030/TCP | ThinQ1 HTTPS, legacy devices only |
 | 47878/TCP | ThinQ1 secure MQTT, legacy devices only |
