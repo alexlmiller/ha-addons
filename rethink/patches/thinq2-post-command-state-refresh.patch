@@ -1,0 +1,65 @@
+diff --git a/cloud/devices/POT_056905_WW.ts b/cloud/devices/POT_056905_WW.ts
+index 3a89238..68df7b6 100644
+--- a/cloud/devices/POT_056905_WW.ts
++++ b/cloud/devices/POT_056905_WW.ts
+@@ -11,6 +11,8 @@ import HADevice from './base'
+  * ThinQ model POT_056905_WW
+  */
+ export default class Device extends TLVDevice {
++    control_query_timeout: ReturnType<typeof setTimeout> | undefined
++
+     constructor(HA: Connection, thinq: Thinq2Device, meta: Metadata) {
+         super(HA, thinq)
+ 
+@@ -162,6 +164,24 @@ export default class Device extends TLVDevice {
+         this.setConfig(config)
+     }
+ 
++    setProperty(prop: string, mqttValue: string) {
++        super.setProperty(prop, mqttValue)
++
++        if (this.control_query_timeout != undefined) clearTimeout(this.control_query_timeout)
++        this.control_query_timeout = setTimeout(() => {
++            this.control_query_timeout = undefined
++            this.query()
++        }, 1000)
++    }
++
++    drop() {
++        if (this.control_query_timeout != undefined) {
++            clearTimeout(this.control_query_timeout)
++            this.control_query_timeout = undefined
++        }
++        super.drop()
++    }
++
+     processData(buf: Buffer) {
+         if (
+             buf[2] === 0x04 &&
+diff --git a/tests/cloud/devices/POT_056905_WW.test.ts b/tests/cloud/devices/POT_056905_WW.test.ts
+index fe90e56..4d49c41 100644
+--- a/tests/cloud/devices/POT_056905_WW.test.ts
++++ b/tests/cloud/devices/POT_056905_WW.test.ts
+@@ -145,6 +145,22 @@ describe(MODEL_ID, () => {
+         dev.drop()
+     })
+ 
++    test('HA write schedules a values refresh', (t) => {
++        const { ha, thinq, dev } = buildReadyDevice(t)
++
++        ha.setProperty(DEVICE_ID, 'climate', 'temperature_command', '22')
++        assert.equal(thinq.outbox.length, 1)
++
++        tickMockTimers(t, 999)
++        assert.equal(thinq.outbox.length, 1)
++
++        tickMockTimers(t, 1)
++        assert.equal(thinq.outbox.length, 2)
++        assert.equal(hex(thinq.outbox[1]), QUERY_REQUEST_HEX)
++
++        dev.drop()
++    })
++
+     test('0xA7 caps response triggers values query', () => {
+         const { thinq, dev } = makeDevice()
+         thinq.resetRecorder()
