@@ -1,6 +1,6 @@
 name: "Rethink"
 description: "Local-only LG ThinQ server with Home Assistant MQTT discovery"
-version: "0.1.3"
+version: "0.1.4"
 slug: "rethink"
 url: "https://github.com/anszom/rethink"
 startup: application
@@ -13,12 +13,12 @@ services:
 
 ports:
   443/tcp: 443
-  8883/tcp: 8883
+  8883/tcp: 8890
   46030/tcp: 46030
   47878/tcp: 47878
 ports_description:
   443/tcp: "ThinQ2 HTTPS service (required)"
-  8883/tcp: "ThinQ2 secure MQTT service (required; standard LG port)"
+  8883/tcp: "ThinQ2 secure MQTT service (internal 8883; published on HAOS port 8890)"
   46030/tcp: "ThinQ1 HTTPS service (only for legacy appliances)"
   47878/tcp: "ThinQ1 secure MQTT service (only for legacy appliances)"
 
