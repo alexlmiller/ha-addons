@@ -28,13 +28,13 @@ The add-on exposes these appliance-facing ports:
 | Port | Purpose |
 |---|---|
 | 443/TCP | ThinQ2 HTTPS |
-| 8890/TCP | ThinQ2 secure MQTT listener on HAOS. Rethink still advertises LG's standard 8883 port to the appliance. |
+| 8890/TCP | ThinQ2 secure MQTT listener on HAOS and the port Rethink advertises to the appliance. |
 | 46030/TCP | ThinQ1 HTTPS, legacy devices only |
 | 47878/TCP | ThinQ1 secure MQTT, legacy devices only |
 
 Keep these reachable only from the AC/IoT network. Do not publish them through a Cloudflare tunnel or expose them to the Internet.
 
-If HAOS Mosquitto already owns host port 8883, configure a source-restricted destination-NAT policy on the gateway: AC IP to the Home Assistant IP, TCP destination port `8883`, translated port `8890`. This preserves LG's expected secure-MQTT port for the appliance while forwarding only that appliance to the add-on. Do not redirect all IoT clients or change Mosquitto's listener.
+No destination-NAT rule is needed: Rethink advertises TCP port `8890` directly. Keep this port reachable only from the AC/IoT network and leave Home Assistant Mosquitto's host port `8883` unchanged.
 
 ## Setup
 
