@@ -21,18 +21,20 @@ It is experimental. Do not install it until you have a recovery plan for each ap
 
 Choose a stable local DNS name, such as `rethink.lan`, and set it as `hostname` here. It must resolve to the Home Assistant IP address for the AC.
 
-During initial provisioning, Rethink requires `common.lgthinq.com` to resolve to Home Assistant. This add-on listens on TCP port 443 directly, so no router-level destination-port translation is required. Scope the temporary DNS record to the pilot window and remove it when provisioning succeeds unless Rethink's upstream instructions say it is still needed for that appliance generation.
+During initial provisioning, Rethink requires `common.lgthinq.com` to resolve to Home Assistant. This add-on listens on TCP port 443 directly, so no router-level destination-port translation is required for HTTPS. Scope the temporary DNS record to the pilot window and remove it when provisioning succeeds unless Rethink's upstream instructions say it is still needed for that appliance generation.
 
 The add-on exposes these appliance-facing ports:
 
 | Port | Purpose |
 |---|---|
 | 443/TCP | ThinQ2 HTTPS |
-| 8890/TCP | ThinQ2 secure MQTT |
+| 8890/TCP | ThinQ2 secure MQTT listener on HAOS. Rethink still advertises LG's standard 8883 port to the appliance. |
 | 46030/TCP | ThinQ1 HTTPS, legacy devices only |
 | 47878/TCP | ThinQ1 secure MQTT, legacy devices only |
 
 Keep these reachable only from the AC/IoT network. Do not publish them through a Cloudflare tunnel or expose them to the Internet.
+
+If HAOS Mosquitto already owns host port 8883, configure a source-restricted destination-NAT policy on the gateway: AC IP to the Home Assistant IP, TCP destination port `8883`, translated port `8890`. This preserves LG's expected secure-MQTT port for the appliance while forwarding only that appliance to the add-on. Do not redirect all IoT clients or change Mosquitto's listener.
 
 ## Setup
 
