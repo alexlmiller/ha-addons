@@ -21,7 +21,7 @@ if bashio::var.is_empty "${MQTT_HOST}" || bashio::var.is_empty "${MQTT_PORT}"; t
 fi
 
 if bashio::var.true "${DEBUG}"; then
-    LOG_FILTER='["status","incoming","HTTPS","publish"]'
+    LOG_FILTER='["status","incoming","HTTPS","publish","control"]'
 else
     LOG_FILTER='["status"]'
 fi

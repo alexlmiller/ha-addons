@@ -1,0 +1,41 @@
+diff --git a/cloud/devices/tlv_device.ts b/cloud/devices/tlv_device.ts
+index 2469c9d..1e18c25 100644
+--- a/cloud/devices/tlv_device.ts
++++ b/cloud/devices/tlv_device.ts
+@@ -131,6 +131,7 @@ export default class TLVDevice extends HADevice {
+     }
+ 
+     processData(buf: Buffer) {
++        log('control', this.id, 'inbound packet', buf.toString('hex'))
+         if (
+             buf[2] == 0x04 &&
+             buf[3] == 0x00 &&
+@@ -182,6 +183,7 @@ export default class TLVDevice extends HADevice {
+         let buf = [0x04, 0x00, 0x00, 0x00, 0x65, b2, b3, b4, tlvArray.length].concat(tlvArray)
+         const result = crc16(buf)
+         buf = [b0, b1].concat(buf, [result >> 8, result & 0xff])
++        log('control', this.id, 'outbound packet', Buffer.from(buf).toString('hex'))
+         this.thinq.send_packet(Buffer.from(buf))
+     }
+ 
+@@ -293,7 +295,7 @@ export default class TLVDevice extends HADevice {
+ 
+     // HA-side
+     setProperty(prop: string, mqttValue: string) {
+-        //console.log("HA write", prop, mqttValue)
++        log('control', this.id, 'HA command', prop, mqttValue)
+         const def = this.fields_by_ha[prop]
+         if (!def || def.writable === false) {
+             console.warn(`Attempting to set property ${prop} which is not writable`)
+diff --git a/cloud/homeassistant.ts b/cloud/homeassistant.ts
+index 8a5dca7..70c93ce 100644
+--- a/cloud/homeassistant.ts
++++ b/cloud/homeassistant.ts
+@@ -102,6 +102,7 @@ export class Connection extends TypedEmitter<ConnectionEvents> {
+                 // rethink/+/+/set
+                 if (pathelements.length === 3 && pathelements[2] === 'set') {
+                     const [id, prop] = pathelements
++                    log('control', id, 'MQTT command received', prop, message.toString('utf-8'))
+                     this.emit('setProperty', id, prop, message.toString('utf-8'))
+                 }
+ 

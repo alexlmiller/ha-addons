@@ -4,7 +4,8 @@ FROM node:22-bookworm-slim AS build
 
 ARG RETHINK_REF=3f24361871d102183daa68d37120e3897b7b7036
 
-COPY patches/thinq2-accept-timesync-without-provisioning-ack.patch /tmp/
+COPY patches/thinq2-accept-timesync-without-provisioning-ack.patch \
+    patches/thinq2-control-diagnostics.patch /tmp/
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates git \
@@ -15,7 +16,9 @@ RUN git clone https://github.com/anszom/rethink.git /src \
     && git checkout "${RETHINK_REF}" \
     && test "$(git rev-parse HEAD)" = "${RETHINK_REF}" \
     && git apply --check /tmp/thinq2-accept-timesync-without-provisioning-ack.patch \
-    && git apply /tmp/thinq2-accept-timesync-without-provisioning-ack.patch
+    && git apply /tmp/thinq2-accept-timesync-without-provisioning-ack.patch \
+    && git apply --check /tmp/thinq2-control-diagnostics.patch \
+    && git apply /tmp/thinq2-control-diagnostics.patch
 
 WORKDIR /src
 
