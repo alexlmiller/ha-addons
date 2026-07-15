@@ -1,6 +1,6 @@
 name: "Rethink"
 description: "Local-only LG ThinQ server with Home Assistant MQTT discovery"
-version: "0.1.6"
+version: "0.1.7"
 slug: "rethink"
 url: "https://github.com/anszom/rethink"
 startup: application

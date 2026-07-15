@@ -36,7 +36,7 @@ Keep these reachable only from the AC/IoT network. Do not publish them through a
 
 No destination-NAT rule is needed: Rethink advertises TCP port `8890` directly. Keep this port reachable only from the AC/IoT network and leave Home Assistant Mosquitto's host port `8883` unchanged.
 
-Some ThinQ2 firmware, including the tested LP1021BSSM, sends its first `req_timesync` before (and without) `completeProvisioning_ack`. This add-on carries a narrow upstream patch that accepts that request as the provisioning completion signal, then returns the required time response.
+Some ThinQ2 firmware, including the tested LP1021BSSM, does not send `completeProvisioning_ack` after a successful `deploy`. This add-on carries a narrow upstream patch that accepts a supported `deploy` as the provisioning completion signal, allowing Home Assistant discovery and later time-sync requests to proceed normally.
 
 ## Setup
 
