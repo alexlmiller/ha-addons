@@ -43,21 +43,31 @@ func main() {
 
 		log.Printf("USB device opened - waiting for button press")
 		loopErr := waitLoop(dev, &lastScan, &scanButtonHeld)
+		deviceReset := false
 		if loopErr != nil {
 			log.Printf("Scanner loop ended: %v", loopErr)
-			if err := dev.Recover(); err != nil {
-				log.Printf("Scanner USB endpoint recovery failed: %v", err)
-			} else {
-				log.Printf("Scanner USB endpoints recovered after loop error")
-			}
-			if err := dev.Reset(); err != nil {
-				log.Printf("Scanner USB function reset failed: %v", err)
-			} else {
-				log.Printf("Scanner USB function reset after loop error")
+			if requiresUSBRecovery(loopErr) {
+				if err := dev.Recover(); err != nil {
+					log.Printf("Scanner USB endpoint recovery failed: %v", err)
+				} else {
+					log.Printf("Scanner USB endpoints recovered after loop error")
+				}
+				if err := dev.Reset(); err != nil {
+					log.Printf("Scanner USB function reset failed: %v", err)
+				} else {
+					deviceReset = true
+					log.Printf("Scanner USB function reset after loop error")
+				}
 			}
 		}
-		if err := dev.Close(); err != nil {
-			log.Printf("Device close warning: %v", err)
+		var closeErr error
+		if deviceReset {
+			closeErr = dev.CloseAfterReset()
+		} else {
+			closeErr = dev.Close()
+		}
+		if closeErr != nil {
+			log.Printf("Device close warning: %v", closeErr)
 		}
 		if transientUSBError(loopErr) {
 			time.Sleep(5 * time.Second)
@@ -195,6 +205,10 @@ func transientUSBError(err error) bool {
 		errors.Is(err, syscall.ETIMEDOUT) ||
 		errors.Is(err, syscall.EAGAIN) ||
 		errors.Is(err, syscall.ENOMEM)
+}
+
+func requiresUSBRecovery(err error) bool {
+	return transientUSBError(err) || errors.Is(err, fss500.ErrTemporaryNoData)
 }
 
 func performScan(dev *usb.Device) error {
