@@ -132,6 +132,13 @@ func (u *Device) Close() error {
 	return u.f.Close()
 }
 
+// CloseAfterReset closes the usbfs descriptor without releasing its interface.
+// USBDEVFS_RESET rebinds the device interfaces, so a release against the old
+// interface would only produce an expected ENODEV/EINVAL warning.
+func (u *Device) CloseAfterReset() error {
+	return u.f.Close()
+}
+
 // Recover clears a stalled bulk endpoint and resets its data toggle. The
 // scanner can leave either endpoint stalled after an interrupted image
 // transfer; merely releasing and re-opening the device does not clear that
