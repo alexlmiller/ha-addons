@@ -26,6 +26,7 @@ const (
 	usbdevfsClaimInterface   = 0x8004550f
 	usbdevfsReleaseInterface = 0x80045510
 	usbdevfsClearHalt        = 0x80045515
+	usbdevfsReset            = 0x5514
 )
 
 const usbDevicesRoot = "/sys/bus/usb/devices"
@@ -149,6 +150,23 @@ func (u *Device) Recover() error {
 	}
 
 	return errors.Join(errs...)
+}
+
+// Reset performs a USB function reset. Clearing halted endpoints is enough
+// for a normal interrupted transfer, but the iX500 can also enter a state
+// where subsequent command responses overflow after a failed scan. A function
+// reset makes the kernel re-enumerate the scanner and restores its command
+// channel before the daemon opens it again.
+func (u *Device) Reset() error {
+	if _, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		u.f.Fd(),
+		usbdevfsReset,
+		0,
+	); errno != 0 {
+		return errno
+	}
+	return nil
 }
 
 func badName(name string) bool {
