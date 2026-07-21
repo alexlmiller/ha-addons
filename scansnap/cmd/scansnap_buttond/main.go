@@ -29,7 +29,10 @@ func main() {
 	log.Printf("Button press starts scan -> OCR -> upload pipeline")
 	log.Printf("USB-native low-level scan profile: %s", activeScanProfile())
 
-	var lastScan time.Time
+	var (
+		lastScan       time.Time
+		scanButtonHeld bool
+	)
 	for {
 		dev, err := usb.FindDevice()
 		if err != nil {
@@ -39,9 +42,14 @@ func main() {
 		}
 
 		log.Printf("USB device opened - waiting for button press")
-		loopErr := waitLoop(dev, &lastScan)
+		loopErr := waitLoop(dev, &lastScan, &scanButtonHeld)
 		if loopErr != nil {
 			log.Printf("Scanner loop ended: %v", loopErr)
+			if err := dev.Recover(); err != nil {
+				log.Printf("Scanner USB endpoint recovery failed: %v", err)
+			} else {
+				log.Printf("Scanner USB endpoints recovered after loop error")
+			}
 		}
 		if err := dev.Close(); err != nil {
 			log.Printf("Device close warning: %v", err)
@@ -139,7 +147,7 @@ func resolvedScanProfile() string {
 	return profile
 }
 
-func waitLoop(dev *usb.Device, lastScan *time.Time) error {
+func waitLoop(dev *usb.Device, lastScan *time.Time, scanButtonHeld *bool) error {
 	var lastStatus string
 	for {
 		status, err := fss500.GetHardwareStatus(dev)
@@ -154,10 +162,15 @@ func waitLoop(dev *usb.Device, lastScan *time.Time) error {
 			lastStatus = statusLine
 		}
 
-		if status.ScanSw && time.Since(*lastScan) > scanDebounce {
+		if !status.ScanSw {
+			*scanButtonHeld = false
+		}
+
+		if status.ScanSw && !*scanButtonHeld && time.Since(*lastScan) > scanDebounce {
+			*scanButtonHeld = true
 			*lastScan = time.Now()
 			if err := performScan(dev); err != nil {
-				log.Printf("Scan failed: %v", err)
+				return fmt.Errorf("scan: %w", err)
 			} else {
 				log.Printf("Scan completed")
 			}
@@ -175,7 +188,8 @@ func transientUSBError(err error) bool {
 	return errors.Is(err, syscall.EPROTO) ||
 		errors.Is(err, syscall.EOVERFLOW) ||
 		errors.Is(err, syscall.ETIMEDOUT) ||
-		errors.Is(err, syscall.EAGAIN)
+		errors.Is(err, syscall.EAGAIN) ||
+		errors.Is(err, syscall.ENOMEM)
 }
 
 func performScan(dev *usb.Device) error {
