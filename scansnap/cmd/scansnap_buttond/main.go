@@ -50,6 +50,11 @@ func main() {
 			} else {
 				log.Printf("Scanner USB endpoints recovered after loop error")
 			}
+			if err := dev.Reset(); err != nil {
+				log.Printf("Scanner USB function reset failed: %v", err)
+			} else {
+				log.Printf("Scanner USB function reset after loop error")
+			}
 		}
 		if err := dev.Close(); err != nil {
 			log.Printf("Device close warning: %v", err)
