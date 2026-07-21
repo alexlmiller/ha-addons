@@ -1,6 +1,7 @@
 package usb
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ const (
 	usbdevfsBulk             = 0xc0185502
 	usbdevfsClaimInterface   = 0x8004550f
 	usbdevfsReleaseInterface = 0x80045510
+	usbdevfsClearHalt        = 0x80045515
 )
 
 const usbDevicesRoot = "/sys/bus/usb/devices"
@@ -127,6 +129,26 @@ func (u *Device) Close() error {
 		return errno
 	}
 	return u.f.Close()
+}
+
+// Recover clears a stalled bulk endpoint and resets its data toggle. The
+// scanner can leave either endpoint stalled after an interrupted image
+// transfer; merely releasing and re-opening the device does not clear that
+// condition.
+func (u *Device) Recover() error {
+	var errs []error
+	for _, endpoint := range [...]uint32{hostToDevice, deviceToHost} {
+		if _, _, errno := syscall.Syscall(
+			syscall.SYS_IOCTL,
+			u.f.Fd(),
+			usbdevfsClearHalt,
+			uintptr(unsafe.Pointer(&endpoint)),
+		); errno != 0 {
+			errs = append(errs, fmt.Errorf("clear halt on endpoint 0x%02x: %w", endpoint, errno))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 func badName(name string) bool {
