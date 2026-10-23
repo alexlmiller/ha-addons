@@ -1,6 +1,6 @@
 ARG BUILD_ARCH=amd64
 
-FROM node:22-bookworm-slim AS build
+FROM node:22.23.4-bookworm-slim AS build
 
 ARG RETHINK_REF=3f24361871d102183daa68d37120e3897b7b7036
 
